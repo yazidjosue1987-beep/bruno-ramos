@@ -1,8 +1,76 @@
-
 import React, { useState } from 'react';
 import { User, Course, CourseSyllabus } from '../types';
 import { getStudentCourses, getStudentReportCard, getStudentSyllabus, MOCK_ANNOUNCEMENTS, MOCK_USERS } from '../services/dataService';
 import { Calendar, TrendingUp, Bell, Coffee, BookOpen, CheckCircle, Circle, FileText, ChevronDown, ChevronUp, Layout, GraduationCap, Clock, User as UserIcon } from 'lucide-react';
+
+// Moved SyllabusCard outside to avoid recreation and typing issues
+interface SyllabusCardProps {
+  syllabus: CourseSyllabus;
+  teacherName: string;
+}
+
+const SyllabusCard: React.FC<SyllabusCardProps> = ({ syllabus, teacherName }) => {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden transition-all duration-300">
+      <div 
+        className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer hover:bg-slate-50"
+        onClick={() => setExpanded(!expanded)}
+      >
+        <div className="flex-1">
+          <h4 className="font-bold text-lg text-slate-800 flex items-center gap-2">
+            <BookOpen size={20} className="text-blue-600" />
+            {syllabus.courseName}
+          </h4>
+          <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+             <UserIcon size={12}/> {teacherName}
+          </p>
+          <div className="mt-3 w-full max-w-md">
+             <div className="flex justify-between text-xs text-slate-500 mb-1">
+               <span>Avance del Silabo</span>
+               <span className="font-bold">{syllabus.totalProgress}%</span>
+             </div>
+             <div className="w-full bg-slate-200 rounded-full h-2">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-1000" 
+                  style={{ width: `${syllabus.totalProgress}%` }}
+                ></div>
+             </div>
+          </div>
+        </div>
+        <div className="text-slate-400">
+          {expanded ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
+        </div>
+      </div>
+
+      {expanded && (
+        <div className="p-5 border-t border-slate-100 bg-slate-50/50">
+          <h5 className="font-semibold text-sm text-slate-700 uppercase tracking-wide mb-3">Temario & Prácticas</h5>
+          <div className="space-y-3">
+            {syllabus.topics.map((topic, idx) => (
+              <div key={topic.id} className="flex items-start gap-3 p-3 bg-white rounded-lg border border-slate-100 shadow-sm">
+                <div className={`mt-0.5 ${topic.completed ? 'text-green-500' : 'text-slate-300'}`}>
+                  {topic.completed ? <CheckCircle size={18} /> : <Circle size={18} />}
+                </div>
+                <div className="flex-1">
+                  <p className={`text-sm font-medium ${topic.completed ? 'text-slate-700' : 'text-slate-500'}`}>
+                    {topic.title}
+                  </p>
+                  <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ml-auto mt-1 inline-block ${
+                    topic.type === 'practice' ? 'bg-amber-100 text-amber-700' : 'bg-blue-50 text-blue-700'
+                  }`}>
+                    {topic.type === 'practice' ? 'Práctica' : 'Teoría'}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 interface StudentViewProps {
   user: User;
@@ -54,73 +122,6 @@ const StudentView: React.FC<StudentViewProps> = ({ user }) => {
     if (score === null) return 'text-slate-300 bg-slate-50';
     if (score < 11) return 'text-red-600 bg-red-50 font-bold';
     return 'text-blue-600 bg-blue-50 font-bold';
-  };
-
-  // Sub-component for a Course Syllabus Card
-  const SyllabusCard = ({ syllabus }: { syllabus: CourseSyllabus }) => {
-    const [expanded, setExpanded] = useState(false);
-    // Find course to get teacher name
-    const course = myCourses.find(c => c.id === syllabus.courseId);
-    const teacherName = course ? getTeacherName(course.teacherId) : '';
-
-    return (
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden transition-all duration-300">
-        <div 
-          className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer hover:bg-slate-50"
-          onClick={() => setExpanded(!expanded)}
-        >
-          <div className="flex-1">
-            <h4 className="font-bold text-lg text-slate-800 flex items-center gap-2">
-              <BookOpen size={20} className="text-blue-600" />
-              {syllabus.courseName}
-            </h4>
-            <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
-               <UserIcon size={12}/> {teacherName}
-            </p>
-            <div className="mt-3 w-full max-w-md">
-               <div className="flex justify-between text-xs text-slate-500 mb-1">
-                 <span>Avance del Silabo</span>
-                 <span className="font-bold">{syllabus.totalProgress}%</span>
-               </div>
-               <div className="w-full bg-slate-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-1000" 
-                    style={{ width: `${syllabus.totalProgress}%` }}
-                  ></div>
-               </div>
-            </div>
-          </div>
-          <div className="text-slate-400">
-            {expanded ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
-          </div>
-        </div>
-
-        {expanded && (
-          <div className="p-5 border-t border-slate-100 bg-slate-50/50">
-            <h5 className="font-semibold text-sm text-slate-700 uppercase tracking-wide mb-3">Temario & Prácticas</h5>
-            <div className="space-y-3">
-              {syllabus.topics.map((topic, idx) => (
-                <div key={topic.id} className="flex items-start gap-3 p-3 bg-white rounded-lg border border-slate-100 shadow-sm">
-                  <div className={`mt-0.5 ${topic.completed ? 'text-green-500' : 'text-slate-300'}`}>
-                    {topic.completed ? <CheckCircle size={18} /> : <Circle size={18} />}
-                  </div>
-                  <div className="flex-1">
-                    <p className={`text-sm font-medium ${topic.completed ? 'text-slate-700' : 'text-slate-500'}`}>
-                      {topic.title}
-                    </p>
-                    <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ml-auto mt-1 inline-block ${
-                      topic.type === 'practice' ? 'bg-amber-100 text-amber-700' : 'bg-blue-50 text-blue-700'
-                    }`}>
-                      {topic.type === 'practice' ? 'Práctica' : 'Teoría'}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    );
   };
 
   return (
@@ -245,9 +246,13 @@ const StudentView: React.FC<StudentViewProps> = ({ user }) => {
           
           <div className="space-y-4">
             {mySyllabus.length > 0 ? (
-              mySyllabus.map((syllabus) => (
-                <SyllabusCard key={syllabus.courseId} syllabus={syllabus} />
-              ))
+              mySyllabus.map((syllabus) => {
+                const course = myCourses.find(c => c.id === syllabus.courseId);
+                const teacherName = course ? getTeacherName(course.teacherId) : '';
+                return (
+                  <SyllabusCard key={syllabus.courseId} syllabus={syllabus} teacherName={teacherName} />
+                );
+              })
             ) : (
               <div className="text-center py-12 bg-white rounded-xl border border-dashed">
                 <p className="text-slate-500">Cargando información de los cursos...</p>
